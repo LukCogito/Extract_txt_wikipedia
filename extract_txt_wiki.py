@@ -1,5 +1,3 @@
-#!/usr/bin/python3
-
 # Set of Python funcitons for text extraction and preprocessing; made for the aim of wikipedia articles extraction for mimic3 synthesis
 # Author:
 #  _          _       ____            _ _        
@@ -16,8 +14,8 @@ import requests
 from bs4 import BeautifulSoup
 
 # Verify args
-# If there are less than 1 arg
-if len(sys.argv) != 1:
+# If there are less than 2 args
+if len(sys.argv) != 2:
     # Instructate the user
     print("Usage: extract_txt_wiki <URL>")
     # And exit with error
@@ -45,10 +43,6 @@ def get_string_from_html(url):
     
     # Return the text
     return text
-
-url = "https://en.wikipedia.org/wiki/Bitcoin#"
-if does_url_exist(url):
-    print(get_string_from_html(url))
 
 # Prepare a dict with special chars to be replaced
 special_chars = {
@@ -102,7 +96,7 @@ def lowercase_words(text):
 # Define a function to replace numbers with their word equivalents
 def replace_numbers_with_words(text):
     # Create a regular expression to find numbers in the text
-    reg_pattern = r'\b\d+\b'
+    reg_pattern = re.compile(r'\b\d+\b')
 
     # Define a sub-function to replace matching numbers with their word equivalents
     def replace_number(match):
@@ -117,17 +111,31 @@ def replace_numbers_with_words(text):
 
 
 # Define a function to remove empty lines from the text
-def remove_empty_lines(file_path):
-    # Open the text file in read-write mode
-    with open(file_path, 'rw') as file:
-        lines = file.readlines()
-        # Use a lambda function to filter out empty lines and convert the result back to a list
-        lines = list(filter(lambda s: s != "\n", lines))
-        file.writelines(lines)
-    print(f"Empty lines were removed from the file at {file_path}.")
+def remove_empty_lines(text):
+    # Split text to list with each line as an item
+    text_splitted = text.splitlines()
+    # Prepare a list for text concat
+    text_concat = []
+    # Iterrate over the splitted text
+
+    for line in text_splitted:
+        # If line isn't empty
+        if line != "":
+            # Append it to the list
+            text_concat.append(line)
+    # And finally join the list without empty lines
+    text = "\n".join(text_concat)
+
+    return text
+
+def remove_square_brackets(text):
+    reg_pattern = re.compile(r"\[(.*?)\]")
+    text = re.sub(reg_pattern, "", text)
+
+    return text
 
 if __name__ == "__main__":
-    url = sys.argv[0]
+    url = sys.argv[1]
     if does_url_exist(url):
         text = get_string_from_html(url)
         print("HTML downloaded and converted to text.")
@@ -137,6 +145,15 @@ if __name__ == "__main__":
         print("Non-acronyms with capitals lowercased.")
         text = replace_numbers_with_words(text)
         print("Numbers replaced with words.")
-        print(text)
+        text = remove_empty_lines(text)
+        print("Empty lines removed.")
+        text = remove_square_brackets(text)
+        print("Square breckets and its content removed.")
+        url_splitted = url.split("/")
+        article_name = url_splitted[len(url_splitted)-1].lower()
+        output_path = "../wiki_articles/" + article_name + ".txt"
+        with open(output_path, "w", encoding="UTF8") as output:
+            output.write(text)
+            print(f"Article about {article_name} saved to \"{output_path}\"")
     else:
         print("Specified link can not be reached!")
