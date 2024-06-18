@@ -12,14 +12,72 @@ from num2words import num2words
 import sys
 import requests
 from bs4 import BeautifulSoup
+import pathlib
+
+# https://stackoverflow.com/questions/22947427/getting-home-directory-with-pathlib
+home_dir = pathlib.Path.home()
 
 # Verify args
 # If there are less than 2 args
-if len(sys.argv) != 2:
+if len(sys.argv) != 3:
     # Instructate the user
-    print("Usage: extract_txt_wiki <URL>")
+    print("Usage: extract_txt_wiki <URL> <lang>")
     # And exit with error
-    sys.exit(1)
+    exit(1)
+
+# Verify the lang
+if sys.argv[2] in ["cz", "en"]:
+    
+    if sys.argv[2] == "cz":
+        special_chars_trans = {
+            '+': 'plus',
+            '€': ' euro',
+            '£': ' libra',
+            '%': ' procento',
+            '>': ' větší než',
+            '$': ' dolar',
+            '=': ' rovná se',
+            '&': ' a',
+            '|': ' paralelně s',
+            '/': ' v poměru k',
+            '~': ' vlnovka',
+            '×': ' krát',
+            '−': ' minus',
+            '°': ' stupeň',
+            '√': ' druhá odmocnina',
+            '*': ' hvězdička',
+            '_': ' podtržítko',
+            '□': ' čtverec',
+            '...': ' trojtečka',
+            }
+
+    else:
+        special_chars_trans = {
+            '+': 'plus',
+            '€': ' Euro',
+            '£': ' Pound',
+            '%': 'percent',
+            '>': 'greater than',
+            '$': 'dollar ',
+            '=': 'equals',
+            '&': 'and',
+            '|': 'or',
+            '/': ' in proportion to ',
+            '~': 'tilde',
+            '×': 'times',
+            '−': 'minus',
+            '°': 'degree',
+            '√': 'Square root',
+            '*': 'asterisk',
+            '_': 'Underscore',
+            '□': 'Square symbol',
+            '…': 'Ellipsis',
+        }
+
+else:
+    print("Language must be \"en\" or \"cz\"")
+    exit(1)
+
     
 # https://stackoverflow.com/questions/16778435/python-check-if-website-exists
 # Define a function for an URL existence veirification
@@ -44,33 +102,10 @@ def get_string_from_html(url):
     # Return the text
     return text
 
-# Prepare a dict with special chars to be replaced
-special_chars = {
-        '+': 'plus',
-        '€': ' Euro',
-        '£': ' Pound',
-        '%': 'percent',
-        '>': 'greater than',
-        '$': 'dollar ',
-        '=': 'equals',
-        '&': 'and',
-        '|': 'or',
-        '/': ' in proportion to ',
-        '~': 'tilde',
-        '×': 'times',
-        '−': 'minus',
-        '°': 'degree',
-        '√': 'Square root',
-        '*': 'asterisk',
-        '_': 'Underscore',
-        '□': 'Square symbol',
-        '…': 'Ellipsis',
-    }
-
 # Define a function for replacing special chars with their transcription in alpha chars
 def replace_special_chars(text):
     # Iterrate over the dict
-    for char, transcription in special_chars.items():
+    for char, transcription in special_chars_trans.items():
         # For each iterration replace char with its transcription
         text = text.replace(char, transcription)
     
@@ -101,7 +136,7 @@ def replace_numbers_with_words(text):
     # Define a sub-function to replace matching numbers with their word equivalents
     def replace_number(match):
         number = int(match.group())
-        return num2words(number)
+        return num2words(number, lang=sys.argv[2])
 
     # Use the re.sub() method to replace matching numbers in the text
     text = re.sub(reg_pattern, replace_number, text)
@@ -151,7 +186,7 @@ if __name__ == "__main__":
         print("Square breckets and its content removed.")
         url_splitted = url.split("/")
         article_name = url_splitted[len(url_splitted)-1].lower()
-        output_path = "../wiki_articles/" + article_name + ".txt"
+        output_path = f"{home_dir}/{article_name}.txt"
         with open(output_path, "w", encoding="UTF8") as output:
             output.write(text)
             print(f"Article about {article_name} saved to \"{output_path}\"")
